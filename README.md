@@ -1,5 +1,16 @@
 # 🎾 Tennis Physics — 3D Web Demo
 
+![Physics Simulation](https://img.shields.io/badge/Physics-Simulation-blue?style=for-the-badge&logo=atom&logoColor=white)
+![Tennis](https://img.shields.io/badge/Tennis-🎾-green?style=for-the-badge)
+![Web Demo](https://img.shields.io/badge/Web-Demo-orange?style=for-the-badge&logo=html5&logoColor=white)
+![RK4](https://img.shields.io/badge/Method-RK4-red?style=for-the-badge)
+![Euler](https://img.shields.io/badge/Method-Euler-purple?style=for-the-badge)
+![Magnus Effect](https://img.shields.io/badge/Magnus-Effect-teal?style=for-the-badge)
+![Spin](https://img.shields.io/badge/Spin-Dynamics-yellow?style=for-the-badge)
+![Sports Analytics](https://img.shields.io/badge/Sports-Analytics-lightgrey?style=for-the-badge)
+![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-black?style=for-the-badge&logo=javascript)
+![HTML5 Canvas](https://img.shields.io/badge/HTML5-Canvas-blueviolet?style=for-the-badge&logo=html5)
+
 **x–y (side view) + x–z (top view)** tennis ball flight simulation.  
 Supports RK4/Euler integration, drag + Magnus (spin), spin decay, 3D wind, and single bounce.  
 Also includes **OTM (optimize)** to automatically tune shots to target **x ≈ 19 m** and desired **z**.
