@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Tennis Physics — 3D Web Demo</title>
+<style>
+  :root{--bg:#0b1020;--panel:#111834;--border:#263055;--mono:#0f1530;--txt:#eef2ff;--ok:#9cffb0;--bad:#ff8b8b;--accent:#ffd34d;--line:#4770ff}
+  *{box-sizing:border-box}
+  body{margin:0;padding:16px;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+  h1{margin:0 0 10px;font-size:20px} h3{margin:0 0 8px}
+  .row{display:flex;gap:16px;flex-wrap:wrap}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:12px;flex:1;min-width:330px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(140px,1fr));gap:8px 12px}
+  label{display:flex;justify-content:space-between;gap:8px;font-size:12px;margin:6px 0}
+  input[type=range],input[type=number],select{width:100%}
+  .row-buttons{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+  button{background:#1b2450;border:1px solid #2f3b7a;color:#fff;padding:8px 10px;border-radius:10px;cursor:pointer}
+  button:hover{filter:brightness(1.08)}
+  .eq,.log{white-space:pre-wrap;background:var(--mono);padding:8px;border-radius:8px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:13px}
+  canvas{background:#071022;border-radius:12px;width:100%;height:auto}
+  .ok{color:var(--ok)} .bad{color:var(--bad)}
+  .two-canv{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(max-width:880px){.two-canv{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<h1>🎾 Tennis Physics — 3D Web Demo (x–y & x–z)</h1>
+
+<div class="row">
+  <div class="panel" style="max-width:460px">
+    <h3>Parametreler</h3>
+    <div class="grid">
+      <div><label>v0 (m/s) <span id="v0v"></span></label><input id="v0" type="range" min="15" max="45" step="0.5" value="28"></div>
+      <div><label>Elev (°) <span id="degv"></span></label><input id="deg" type="range" min="0" max="20" step="0.5" value="6"></div>
+      <div><label>Azim φ (°) <span id="phiv"></span></label><input id="phi" type="range" min="-15" max="15" step="0.5" value="0"></div>
+      <div><label>z0 (m) <span id="z0v"></span></label><input id="z0" type="range" min="-3.5" max="3.5" step="0.1" value="0"></div>
+
+      <div><label>CD (drag) <span id="cdv"></span></label><input id="cd" type="range" min="0.2" max="0.8" step="0.01" value="0.40"></div>
+      <div><label>CL (base lift) <span id="clv"></span></label><input id="cl" type="range" min="0.02" max="0.25" step="0.01" value="0.10"></div>
+
+      <div><label>spinX <span id="sxv"></span></label><input id="spinX" type="range" min="-250" max="250" step="10" value="0"></div>
+      <div><label>spinY <span id="syv"></span></label><input id="spinY" type="range" min="-250" max="250" step="10" value="0"></div>
+      <div><label>spinZ <span id="szv"></span></label><input id="spinZ" type="range" min="-250" max="250" step="10" value="120"></div>
+      <div><label>tau (s) <span id="tauv"></span></label><input id="tau" type="range" min="1" max="8" step="0.5" value="4"></div>
+
+      <div><label>Wind X (m/s) <span id="wxv"></span></label><input id="windX" type="range" min="-5" max="5" step="0.1" value="0"></div>
+      <div><label>Wind Y (m/s) <span id="wyv"></span></label><input id="windY" type="range" min="-3" max="3" step="0.1" value="0"></div>
+      <div><label>Wind Z (m/s) <span id="wzv"></span></label><input id="windZ" type="range" min="-3" max="3" step="0.1" value="0"></div>
+      <div><label>GustY amp (m/s) <span id="gav"></span></label><input id="gustA" type="range" min="0" max="2" step="0.05" value="0"></div>
+
+      <div><label>Δt (s) <span id="dtv"></span></label><input id="dt" type="range" min="0.002" max="0.02" step="0.001" value="0.005"></div>
+      <div><label>y0 (m) <span id="y0v"></span></label><input id="y0" type="range" min="1.5" max="3.0" step="0.05" value="2.5"></div>
+
+      <div><label>Integrator</label>
+        <select id="integrator"><option value="euler">Euler</option><option value="rk4" selected>RK4</option></select>
+      </div>
+      <div><label>Bounce</label>
+        <select id="bounces"><option value="0" selected>Yok</option><option value="1">1 sekme</option></select>
+      </div>
+
+      <div><label>Restitution e <span id="ev"></span></label><input id="e" type="range" min="0.5" max="0.8" step="0.01" value="0.65"></div>
+      <div><label>Friction μ <span id="muv"></span></label><input id="mu" type="range" min="0.0" max="0.3" step="0.01" value="0.10"></div>
+    </div>
+
+    <div class="row-buttons">
+      <button id="preset-cross">Topspin Cross</button>
+      <button id="preset-flat">Flat Serve</button>
+      <button id="preset-kick">Kick Serve</button>
+    </div>
+    <div class="row-buttons">
+      <button id="simulate">Simüle</button>
+      <button id="optimize">Optimize (x≈19m, z hedefli)</button>
+      <button id="exportCsv">CSV Export</button>
+    </div>
+
+    <h3 style="margin-top:10px">OTM Ayarları</h3>
+    <div class="grid">
+      <div><label>Target X (m) <span id="txv"></span></label><input id="targetx" type="range" min="16" max="22" step="0.1" value="19"></div>
+      <div><label>Target Z (m) <span id="tzv"></span></label><input id="targetz" type="range" min="-3.5" max="3.5" step="0.1" value="0"></div>
+      <div><label>Z Weight <span id="zwv"></span></label><input id="zweight" type="range" min="0" max="20" step="1" value="12"></div>
+      <div><label>Court W (m) <span id="cwv"></span></label><input id="courtW" type="range" min="8.23" max="10.97" step="0.01" value="8.23"></div>
+    </div>
+
+    <div class="eq" style="margin-top:8px">
+x(t+Δt) = x(t) + v(t)·Δt
+v(t+Δt) = v(t) + a(t)·Δt
+a(t) = g + (Fd + Fm)/m
+Fm ∝ (ω × v_rel),  ω(t)=ω₀ e^(−t/τ)
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Simülasyon</h3>
+    <div class="two-canv">
+      <div>
+        <div style="font-size:12px;margin:0 0 4px">Yan görünüm: x–y</div>
+        <canvas id="cvXY" width="880" height="340"></canvas>
+      </div>
+      <div>
+        <div style="font-size:12px;margin:0 0 4px">Üstten görünüm: x–z</div>
+        <canvas id="cvXZ" width="880" height="340"></canvas>
+      </div>
+    </div>
+    <div class="kv" id="stats" style="margin-top:8px"></div>
+    <div id="netres" style="margin-top:4px"></div>
+  </div>
+</div>
+
+<div class="panel" style="margin-top:16px">
+  <h3>Console Tarzı Log</h3>
+  <div class="log" id="log"></div>
+</div>
+
+<script>
+// ---------- Helpers ----------
+const P = { rho:1.225, A:0.0034, m:0.057, g:9.81, netX:11.885, netH:0.914, courtL:23.77, courtW:8.23, R:0.033 };
+const el = id=>document.getElementById(id);
+const v3=(x=0,y=0,z=0)=>({x,y,z});
+const add3=(a,b)=>v3(a.x+b.x,a.y+b.y,a.z+b.z);
+const sub3=(a,b)=>v3(a.x-b.x,a.y-b.y,a.z-b.z);
+const mul3=(a,k)=>v3(a.x*k,a.y*k,a.z*k);
+const mag3=a=>Math.hypot(a.x,a.y,a.z);
+const cross3=(a,b)=>v3(a.y*b.z-a.z*b.y, a.z*b.x-a.x*b.z, a.x*b.y-a.y*b.x);
+const varColor = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#fff';
+
+function wind3(t, p){ const wy = p.gustA ? p.gustA*Math.sin(2*Math.PI*(p.gustF||1.2)*t + Math.PI/3) : p.windY;
+  return v3(p.windX, wy, p.windZ);
+}
+function drag3(vrel, CD){ const s=0.5*P.rho*P.A*CD*mag3(vrel); return v3(-s*vrel.x, -s*vrel.y, -s*vrel.z); }
+function omega(t,p){ const g=Math.exp(-t/Math.max(1e-6,p.tau)); return v3(p.spinX*g, p.spinY*g, p.spinZ*g); }
+function magnus3(vrel, p, t){
+  const speed=Math.max(1e-6, mag3(vrel));
+  const omg = omega(t,p), omgMag = mag3(omg); if (omgMag<1e-8) return v3(0,0,0);
+  const S=Math.min(1.2, (omgMag*P.R)/speed); const CL = p.CL * S;
+  const k=0.5*P.rho*P.A*CL*speed;
+  const ohat=mul3(omg, 1/omgMag); const c=cross3(ohat, vrel);
+  return mul3(c, k);
+}
+
+function stepEuler(s,h,deriv){ const k=deriv(s); return {x:add3(s.x,mul3(k.dx,h)), v:add3(s.v,mul3(k.dv,h)), t:s.t+h, bleft:s.bleft}; }
+function stepRK4(s,h,deriv){
+  const k1=deriv(s);
+  const s2={x:add3(s.x,mul3(k1.dx,h/2)), v:add3(s.v,mul3(k1.dv,h/2)), t:s.t+h/2, bleft:s.bleft};
+  const k2=deriv(s2);
+  const s3={x:add3(s.x,mul3(k2.dx,h/2)), v:add3(s.v,mul3(k2.dv,h/2)), t:s.t+h/2, bleft:s.bleft};
+  const k3=deriv(s3);
+  const s4={x:add3(s.x,mul3(k3.dx,h)),   v:add3(s.v,mul3(k3.dv,h)),   t:s.t+h,   bleft:s.bleft};
+  const k4=deriv(s4);
+  const x = add3(s.x, add3(mul3(k1.dx,h/6), add3(mul3(k2.dx,h/3), add3(mul3(k3.dx,h/3), mul3(k4.dx,h/6)))));
+  const v = add3(s.v, add3(mul3(k1.dv,h/6), add3(mul3(k2.dv,h/3), add3(mul3(k3.dv,h/3), mul3(k4.dv,h/6)))));
+  return {x,v,t:s.t+h, bleft:s.bleft};
+}
+
+function simulate(p){
+  const rad=p.deg*Math.PI/180, ph=p.phi*Math.PI/180;
+  let s={ x:v3(0,p.y0,p.z0), v:v3(p.v0*Math.cos(rad)*Math.cos(ph), p.v0*Math.sin(rad), p.v0*Math.cos(rad)*Math.sin(ph)), t:0, bleft:p.bounces };
+  const X=[s.x], V=[s.v], T=[s.t];
+  let landed=-1, bounced=false, firstTouchIndex=-1;
+  const step = p.integrator==='rk4' ? (ss,h)=>stepRK4(ss,h,(st)=>{
+    const w=wind3(st.t,p), vrel=sub3(st.v,w), FD=drag3(vrel,p.CD), FM=magnus3(vrel,p,st.t);
+    const a=add3(v3(FD.x/P.m,FD.y/P.m,FD.z/P.m), v3(0,-P.g,0)); return {dx:st.v, dv:a};
+  }) : (ss,h)=>stepEuler(ss,h,(st)=>{
+    const w=wind3(st.t,p), vrel=sub3(st.v,w), FD=drag3(vrel,p.CD), FM=magnus3(vrel,p,st.t);
+    const a=add3(v3(FD.x/P.m,FD.y/P.m,FD.z/P.m), v3(0,-P.g,0)); return {dx:st.v, dv:a};
+  });
+
+  for(let i=1;i<120000;i++){
+    s = step(s,p.dt);
+    if (s.x.y<=0){
+      if (firstTouchIndex<0) firstTouchIndex=i;
+      if (s.bleft>0 && s.v.y<0){
+        s.x.y=0; s.v.y = -p.e*s.v.y; s.v.x*= (1-p.mu); s.v.z*=(1-p.mu); s.bleft--; bounced=true;
+      } else { landed=i; X.push(s.x); V.push(s.v); T.push(s.t); break; }
+    }
+    X.push(s.x); V.push(s.v); T.push(s.t);
+    if (s.x.x>P.courtL+5){ landed=i; break; }
+  }
+  return {X,V,T,landed,bounced,firstTouchIndex};
+}
+
+const maxY=(X,n)=>{let m=-1e9; for(let i=0;i<n;i++) m=Math.max(m,X[i].y); return m;};
+const lastXZ=(X,n)=>{ const p=X[Math.max(0,n-1)]; return {x:p.x,z:p.z}; };
+function yAtX3D(X,n,q){ for(let i=1;i<n;i++){ const a=X[i-1], b=X[i]; if(a.x<=q && q<=b.x){ const t=(q-a.x)/(b.x-a.x); return a.y + t*(b.y-a.y); } } return NaN; }
+
+function report(sim, p, measure='final'){
+  const {X,T,landed,bounced,firstTouchIndex}=sim;
+  const pickIndex = (measure==='first' && firstTouchIndex>0) ? firstTouchIndex : ((landed>0)? landed : X.length);
+  const n = Math.max(1, pickIndex);
+  const peak=maxY(X,n), {x:landx,z:landz}=lastXZ(X,n), yNet=yAtX3D(X,n,P.netX);
+  const measLabel = (measure==='first')?'FIRST CONTACT':'FINAL LANDING';
+
+  const lines=[];
+  lines.push(`=== Trajectory (${p.integrator.toUpperCase()}) — 3D ===`);
+  lines.push(`[${measLabel}]`);
+  lines.push(`Launch: v0=${p.v0.toFixed(2)} m/s | elev=${p.deg.toFixed(1)}°, azim=${p.phi.toFixed(1)}°, y0=${p.y0.toFixed(2)} m, z0=${p.z0.toFixed(2)} m`);
+  lines.push(`Wind: x=${p.windX.toFixed(2)}, y=${p.windY.toFixed(2)} (+gustA=${p.gustA.toFixed(2)}), z=${p.windZ.toFixed(2)}`);
+  lines.push(`Peak y ≈ ${peak.toFixed(2)} m`);
+  lines.push(`Landing ≈ x:${landx.toFixed(2)} m, z:${landz.toFixed(2)} m`);
+  if (landx>P.courtL) lines.push(`⚠️ Court out (length): x=${landx.toFixed(2)} m > ${P.courtL}`);
+  const halfW=(p.courtW||P.courtW)/2;
+  if (Math.abs(landz)>halfW) lines.push(`⚠️ Court out (width): |z|=${Math.abs(landz).toFixed(2)} m > ${halfW.toFixed(2)}`);
+  if (!Number.isFinite(yNet)) lines.push(`Net check: lands before net plane x=${P.netX}`);
+  else lines.push(`Net check: y(x=${P.netX.toFixed(3)}) = ${yNet.toFixed(2)} ${yNet>P.netH?'>':'<='} ${P.netH}`);
+
+  if (bounced) lines.push(`⤴️ Bounce: e=${p.e}, μ=${p.mu} (single)`);
+  if (firstTouchIndex>0 && measure!=='first'){
+    const q=X[firstTouchIndex];
+    lines.push(`First contact at x=${q.x.toFixed(2)}, z=${q.z.toFixed(2)} (use FIRST to report this point)`);
+  }
+  el('log').textContent = lines.join('\n');
+
+  drawXY(X,n,p); drawXZ(X,n,p);
+  el('stats').innerHTML = `
+    <div>Launch</div><div>${p.v0.toFixed(1)} m/s @ ${p.deg.toFixed(1)}° / φ=${p.phi.toFixed(1)}°</div>
+    <div>Peak y</div><div>${peak.toFixed(2)} m</div>
+    <div>Landing</div><div>x=${landx.toFixed(2)} m, z=${landz.toFixed(2)} m</div>
+    <div>Net y@${P.netX.toFixed(3)}</div><div>${Number.isFinite(yNet)?yNet.toFixed(2):'—'} m</div>`;
+  el('netres').innerHTML = Number.isFinite(yNet) ? (yNet>P.netH ? '<span class="ok">✔ Net clear</span>' : '<span class="bad">✖ Net touch</span>') : '—';
+}
+
+function drawXY(X,n,p){
+  const cv=el('cvXY'), cx=cv.getContext('2d'), W=cv.width,H=cv.height, pad=30;
+  const peak=maxY(X,n), {x:landx}=lastXZ(X,n);
+  const xmin=0, xmax=Math.max(24, landx*1.05), ymin=0, ymax=Math.max(peak*1.2, p.y0*1.2, P.netH*2);
+  const sx=x=>pad+(x-xmin)/(xmax-xmin)*(W-2*pad), sy=y=>H-pad-(y-ymin)/(ymax-ymin)*(H-2*pad);
+  cx.clearRect(0,0,W,H);
+  cx.strokeStyle=varColor('--line'); cx.lineWidth=2; cx.beginPath(); cx.moveTo(pad,sy(0)); cx.lineTo(W-pad,sy(0)); cx.stroke();
+  // net
+  cx.strokeStyle=varColor('--accent'); cx.setLineDash([6,4]); cx.beginPath(); cx.moveTo(sx(P.netX), sy(0)); cx.lineTo(sx(P.netX), sy(P.netH)); cx.stroke(); cx.setLineDash([]);
+  cx.beginPath(); cx.moveTo(pad, sy(P.netH)); cx.lineTo(W-pad, sy(P.netH)); cx.strokeStyle='rgba(255,211,77,.25)'; cx.stroke();
+  // court baseline
+  cx.setLineDash([3,4]); cx.strokeStyle=varColor('--bad'); cx.beginPath(); cx.moveTo(sx(P.courtL), sy(0)); cx.lineTo(sx(P.courtL), sy(ymax)); cx.stroke(); cx.setLineDash([]);
+  // traj
+  cx.strokeStyle=varColor('--ok'); cx.lineWidth=2; cx.beginPath(); cx.moveTo(sx(X[0].x), sy(X[0].y)); for(let i=1;i<n;i++) cx.lineTo(sx(X[i].x), sy(X[i].y)); cx.stroke();
+  cx.fillStyle=varColor('--ok'); cx.beginPath(); cx.arc(sx(X[n-1].x), sy(X[n-1].y), 4, 0, Math.PI*2); cx.fill();
+}
+
+function drawXZ(X,n,p){
+  const cv=el('cvXZ'), cx=cv.getContext('2d'), W=cv.width,H=cv.height, pad=30;
+  const {x:landx,z:landz}=lastXZ(X,n);
+  const xmax=Math.max(24, landx*1.05), zmax=Math.max(Math.abs(landz), Math.abs(p.z0), (p.courtW||P.courtW)/2)*1.2;
+  const sx=x=>pad+(x-0)/(xmax-0)*(W-2*pad), sz=z=>H/2 - (z/zmax)*((H/2)-pad);
+  cx.clearRect(0,0,W,H);
+  // center line z=0
+  cx.strokeStyle=varColor('--line'); cx.beginPath(); cx.moveTo(pad, sz(0)); cx.lineTo(W-pad, sz(0)); cx.stroke();
+  // court sidelines
+  const halfW=(p.courtW||P.courtW)/2;
+  cx.setLineDash([5,5]); cx.strokeStyle=varColor('--accent'); cx.beginPath(); cx.moveTo(pad, sz(+halfW)); cx.lineTo(W-pad, sz(+halfW)); cx.stroke();
+  cx.beginPath(); cx.moveTo(pad, sz(-halfW)); cx.lineTo(W-pad, sz(-halfW)); cx.stroke(); cx.setLineDash([]);
+  // trajectory
+  cx.strokeStyle=varColor('--ok'); cx.lineWidth=2; cx.beginPath(); cx.moveTo(sx(X[0].x), sz(X[0].z)); for(let i=1;i<n;i++) cx.lineTo(sx(X[i].x), sz(X[i].z)); cx.stroke();
+  cx.fillStyle=varColor('--ok'); cx.beginPath(); cx.arc(sx(X[n-1].x), sz(X[n-1].z), 4, 0, Math.PI*2); cx.fill();
+}
+
+// ---------- UI ----------
+const controls=['v0','deg','phi','z0','cd','cl','spinX','spinY','spinZ','tau','windX','windY','windZ','gustA','dt','y0','integrator','bounces','e','mu','targetx','targetz','zweight','courtW'];
+controls.forEach(id=>{ const i=el(id), v=el(id+'v'); const upd=()=>{ if(v) v.textContent=i.value; }; i.addEventListener('input', upd); upd(); });
+
+function getParams(){
+  return {
+    v0:+el('v0').value, deg:+el('deg').value, phi:+el('phi').value, z0:+el('z0').value,
+    CD:+el('cd').value, CL:+el('cl').value,
+    spinX:+el('spinX').value, spinY:+el('spinY').value, spinZ:+el('spinZ').value,
+    tau:+el('tau').value, windX:+el('windX').value, windY:+el('windY').value, windZ:+el('windZ').value,
+    gustA:+el('gustA').value, dt:+el('dt').value, y0:+el('y0').value,
+    integrator: el('integrator').value, bounces:+el('bounces').value, e:+el('e').value, mu:+el('mu').value,
+    targetx:+el('targetx').value, targetz:+el('targetz').value, zweight:+el('zweight').value,
+    courtW:+el('courtW').value
+  };
+}
+
+el('simulate').addEventListener('click', ()=>{
+  const p=getParams(); const sim=simulate(p); report(sim,p,'final');
+});
+
+el('exportCsv').addEventListener('click', ()=>{
+  const p=getParams(), sim=simulate(p); const {X,landed}=sim; const n=(landed>0)?landed:X.length;
+  const rows=['t,x,y,z']; for(let i=0;i<n;i++) rows.push(`${(i*p.dt).toFixed(6)},${X[i].x.toFixed(6)},${X[i].y.toFixed(6)},${X[i].z.toFixed(6)}`);
+  const blob=new Blob([rows.join('\n')],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='trajectory3d.csv'; a.click(); URL.revokeObjectURL(a.href);
+});
+
+// OTM (3D): v0, deg, phi — hedef x & z
+function optimize(p){
+  const vmin=22, vmax=34, dmin=3, dmax=14, pmin=-6, pmax=6, step=0.5;
+  const margin=0.20, targetX=+p.targetx||19, targetZ=+p.targetz||0, zW=+p.zweight||12;
+  const minLand=P.netX+0.5, maxLand=Math.min(P.courtL-0.57,23.2), halfW=(p.courtW||P.courtW)/2;
+  let best=null;
+  for(let V=vmin; V<=vmax+1e-9; V+=step){
+    for(let D=dmin; D<=dmax+1e-9; D+=step){
+      for(let PHL=pmin; PHL<=pmax+1e-9; PHL+=step){
+        const pp={...p, v0:V, deg:D, phi:PHL};
+        const sim=simulate(pp); const {X,landed}=sim; const n=(landed>0)?landed:X.length;
+        const {x:landx,z:landz}=lastXZ(X,n); const yNet=yAtX3D(X,n,P.netX);
+        const netPenalty = (!Number.isFinite(yNet) || (yNet - P.netH) < margin) ? 1e6 : 0;
+        const widthPenalty = (Math.abs(landz)<=halfW) ? 0 : 5e5 + (Math.abs(landz)-halfW)*1e4;
+        const inCourt = (landx>=minLand && landx<=maxLand);
+        const landPenalty = inCourt ? (landx-targetX)**2 : 1e5 + Math.abs(landx-targetX)*100;
+        const zAimPenalty = zW * (landz - targetZ) ** 2;
+        const energy = 0.5 * V * V;
+        const score = netPenalty + 10*landPenalty + zAimPenalty + 0.5*energy + widthPenalty;
+        if(!best || score<best.score) best={V,D,PHL,score,landx,landz,yNet};
+      }
+    }
+  }
+  return best;
+}
+
+el('optimize').addEventListener('click', ()=>{
+  const p=getParams(); const best=optimize(p);
+  el('log').textContent = best
+   ? `>>> OTM: v0=${best.V.toFixed(2)} m/s, elev=${best.D.toFixed(1)}°, azim=${best.PHL.toFixed(1)}°, land≈(x:${best.landx.toFixed(2)}, z:${best.landz.toFixed(2)}), y_net=${Number.isFinite(best.yNet)?best.yNet.toFixed(2):'NaN'}`
+   : 'OTM: uygun çözüm yok';
+  if (best){
+    const pp={...p, v0:best.V, deg:best.D, phi:best.PHL};
+    const sim=simulate(pp); report(sim,pp,'final');
+  }
+});
+
+// Presets
+el('preset-cross').addEventListener('click', ()=>{ el('v0').value=24; el('deg').value=6.5; el('phi').value=-6; el('spinZ').value=140; el('cd').value=0.40; el('cl').value=0.10; el('integrator').value='rk4'; controls.forEach(id=>el(id).dispatchEvent(new Event('input'))); });
+el('preset-flat').addEventListener('click', ()=>{ el('v0').value=35; el('deg').value=8; el('phi').value=2; el('spinZ').value=20; el('cd').value=0.45; el('cl').value=0.06; el('integrator').value='rk4'; controls.forEach(id=>el(id).dispatchEvent(new Event('input'))); });
+el('preset-kick').addEventListener('click', ()=>{ el('v0').value=32; el('deg').value=10; el('phi').value=-3; el('spinY').value=80; el('spinZ').value=100; el('cd').value=0.40; el('cl').value=0.12; el('integrator').value='rk4'; controls.forEach(id=>el(id).dispatchEvent(new Event('input'))); });
+
+// İlk çizim
+(function init(){ const p=getParams(); const sim=simulate(p); report(sim,p,'final'); })();
+</script>
+</body>
+</html>
