@@ -15,8 +15,8 @@
 Supports RK4/Euler integration, drag + Magnus (spin), spin decay, 3D wind, and single bounce.  
 Also includes **OTM (optimize)** to automatically tune shots to target **x ≈ 19 m** and desired **z**.
 
-> Demo file: `tennis_web_demo_3d.html`  
-> No extra setup required — just double click. 😎
+> Live Demo link: (https://tennis-physics-3d-demo.vercel.app/) 
+> No extra setup required — just click. 😎
 
 ---
 
