@@ -1,0 +1,1 @@
+{"name": "tennis-cli", "version": "1.0.0", "type": "module", "bin": {"tennis": "index.js"}, "dependencies": {}}
